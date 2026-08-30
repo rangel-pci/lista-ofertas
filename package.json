@@ -1,0 +1,19 @@
+{
+  "name": "lista-ofertas",
+  "private": true,
+  "description": "Mineração e listagem pública de promoções de mercados. Monorepo (npm workspaces).",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.47.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

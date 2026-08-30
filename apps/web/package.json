@@ -1,0 +1,13 @@
+{
+  "name": "@lista-ofertas/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Frontend publico, mobile-first (design.md secao 4.8).",
+  "scripts": {
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.47.0"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "@lista-ofertas/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Servico HTTP: webhook de scraping, API de consulta publica, orquestracao (design.md secao 4).",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.0"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "@lista-ofertas/scraping",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Adapters de scraping por mercado (implementa MercadoScraper). Ver design.md secao 4.6.",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.0"
+  }
+}

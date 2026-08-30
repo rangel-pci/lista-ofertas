@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<!--
+  Fixture SINTÉTICA (não é cópia do site real).
+  Objetivo: simular o cenário em que /promocoes lista MAIS DE UMA campanha
+  de rede simultaneamente, para validar RF-1/AC-3 ("todas as campanhas
+  listadas, não apenas a primeira"). Reaproveita as mesmas classes CSS
+  confirmadas na fixture real (promocoes-listing.html).
+-->
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><title>Promoções | União Supermercados</title></head>
+<body class="public-site">
+<main class="promotions-page">
+<section class="network-promo-section" id="promocoes-rede">
+  <div class="container">
+    <div class="network-promo-grid">
+
+      <article class="network-promo-card" id="promo-rede-9066">
+        <div class="network-promo-card__layout">
+          <div class="network-promo-card__content">
+            <span class="network-promo-card__badge">Promoção da rede</span>
+            <h3 class="network-promo-card__title">FIM DE SEMANA</h3>
+            <div class="network-promo-card__meta">
+              <span class="network-promo-card__chip">De 28/08/2026 até 31/08/2026</span>
+              <span class="network-promo-card__chip">2 produtos</span>
+              <span class="network-promo-card__chip network-promo-card__chip--price">A partir de R$ 4,99</span>
+            </div>
+            <a href="/promocoes/campanha/00000000000000/9066" class="btn btn-outline btn-sm network-promo-card__cta">Ver campanha</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="network-promo-card" id="promo-rede-9067">
+        <div class="network-promo-card__layout">
+          <div class="network-promo-card__content">
+            <span class="network-promo-card__badge">Promoção da rede</span>
+            <h3 class="network-promo-card__title">SEGUNDA CAMPANHA</h3>
+            <div class="network-promo-card__meta">
+              <span class="network-promo-card__chip">De 01/09/2026 até 07/09/2026</span>
+              <span class="network-promo-card__chip">3 produtos</span>
+              <span class="network-promo-card__chip network-promo-card__chip--price">A partir de R$ 3,49</span>
+            </div>
+            <a href="/promocoes/campanha/00000000000000/9067" class="btn btn-outline btn-sm network-promo-card__cta">Ver campanha</a>
+          </div>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+</main>
+</body>
+</html>
