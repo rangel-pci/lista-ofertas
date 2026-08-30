@@ -13,13 +13,16 @@
  * tabelas de fato (append-only) e de identidade entre os testes para
  * garantir isolamento e determinismo (nenhum teste deve depender da ordem
  * de execução nem de dados deixados por outro teste).
+ *
+ * De propósito, `prisma` é recebido por parâmetro em vez de importado aqui:
+ * um `import` estático de `../../src/db` (módulo de produção ainda
+ * inexistente) derrubaria a COLETA de qualquer arquivo de teste que
+ * importasse este helper, escondendo os casos de teste individuais no
+ * relatório (ver nota equivalente no topo de cada `*.test.ts`).
  */
-// @ts-expect-error - módulo de produção ainda não existe; este teste define o contrato esperado.
-import { prisma } from "../../src/db";
-
 export const MERCADO_UNIAO_SLUG = "uniao-supermercados";
 
-export async function getMercadoUniao() {
+export async function getMercadoUniao(prisma: any) {
   const mercado = await prisma.mercado.findUnique({
     where: { slug: MERCADO_UNIAO_SLUG },
   });
@@ -38,12 +41,12 @@ export async function getMercadoUniao() {
  * registros de catálogo semeados por migration (Mercado, Loja) para não
  * recriar fixtures de infraestrutura a cada teste.
  */
-export async function resetOfertasEExecucoes() {
+export async function resetOfertasEExecucoes(prisma: any) {
   await prisma.ofertaCapturada.deleteMany({});
   await prisma.scrapeRun.deleteMany({});
   await prisma.campanha.deleteMany({});
 }
 
-export async function disconnect() {
+export async function disconnect(prisma: any) {
   await prisma.$disconnect();
 }

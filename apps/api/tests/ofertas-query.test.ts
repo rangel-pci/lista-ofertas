@@ -7,6 +7,14 @@
  *   sort ∈ {preco_asc, preco_desc, nome_asc, nome_desc}
  *   GET /api/mercados
  *   GET /api/cidades
+ *
+ * Nota sobre como este arquivo falha antes da implementação existir: em vez de um
+ * `import` estático de `../src/app`/`../src/db` no topo do arquivo (que derrubaria a
+ * COLETA do arquivo inteiro no Vitest, reportando "0 test" e um único erro de
+ * carregamento por arquivo, escondendo os casos individuais), os módulos são
+ * importados dinamicamente dentro de `beforeAll`. Assim a coleta funciona normalmente
+ * — todo `it()` abaixo é registrado — e cada teste falha individualmente, por
+ * asserção, com mensagem clara.
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -15,37 +23,60 @@ process.env.DATABASE_URL =
   process.env.DATABASE_URL ??
   "postgresql://postgres:postgres@localhost:5432/lista_ofertas_test";
 
-// @ts-expect-error - módulo de produção ainda não existe; este teste define o contrato esperado.
-import { buildApp } from "../src/app";
 import { resetOfertasEExecucoes } from "./support/test-db";
 import {
   limparCenarioDeConsulta,
   seedCenarioDeConsulta,
   type SeedResult,
 } from "./support/seed-ofertas";
-// @ts-expect-error - módulo de produção ainda não existe; este teste define o contrato esperado.
-import { prisma } from "../src/db";
+
+let buildApp: (...args: any[]) => Promise<any>;
+let prisma: any;
+let moduleLoadError: unknown = null;
+
+beforeAll(async () => {
+  try {
+    // @ts-expect-error - módulo de produção ainda não existe; este teste define o contrato esperado.
+    const appMod = await import("../src/app");
+    // @ts-expect-error - módulo de produção ainda não existe; este teste define o contrato esperado.
+    const dbMod = await import("../src/db");
+    buildApp = appMod.buildApp;
+    prisma = dbMod.prisma;
+  } catch (error) {
+    moduleLoadError = error;
+  }
+});
+
+function assertProducaoImplementada() {
+  expect(
+    moduleLoadError,
+    "módulo de produção ../src/app ou ../src/db ainda não existe (esperado nesta fase de TDD; a implementação deve fazer este teste passar)",
+  ).toBeNull();
+}
 
 describe("GET /api/ofertas, /api/mercados, /api/cidades", () => {
   let app: any;
   let seed: SeedResult;
 
   beforeAll(async () => {
+    if (moduleLoadError) return;
     app = await buildApp();
     await app.ready();
   });
 
   afterAll(async () => {
-    await app.close();
-    await prisma.$disconnect();
+    if (app) await app.close();
+    if (prisma) await prisma.$disconnect();
   });
 
   beforeEach(async () => {
-    await resetOfertasEExecucoes();
-    seed = await seedCenarioDeConsulta();
+    if (moduleLoadError) return;
+    await resetOfertasEExecucoes(prisma);
+    seed = await seedCenarioDeConsulta(prisma);
   });
 
   it("AC-13: cada oferta na listagem traz ao menos produto, preço, mercado e campanha/período", async () => {
+    assertProducaoImplementada();
     const response = await app.inject({ method: "GET", url: "/api/ofertas" });
     expect(response.statusCode).toBe(200);
 
@@ -66,6 +97,7 @@ describe("GET /api/ofertas, /api/mercados, /api/cidades", () => {
   });
 
   it("AC-8: filtra a listagem por mercado", async () => {
+    assertProducaoImplementada();
     const response = await app.inject({
       method: "GET",
       url: "/api/ofertas?mercado=uniao-supermercados",
@@ -79,6 +111,7 @@ describe("GET /api/ofertas, /api/mercados, /api/cidades", () => {
   });
 
   it("AC-9 (positivo): quando há cidade associável via loja, é possível filtrar por cidade", async () => {
+    assertProducaoImplementada();
     const cidades = await app.inject({ method: "GET", url: "/api/cidades" });
     expect(cidades.statusCode).toBe(200);
     expect(cidades.json()).toContain("Rio de Janeiro");
@@ -95,8 +128,9 @@ describe("GET /api/ofertas, /api/mercados, /api/cidades", () => {
   });
 
   it("AC-9 (negativo): quando nenhuma oferta do resultado tem cidade associável, /api/cidades não gera erro e retorna lista vazia", async () => {
+    assertProducaoImplementada();
     // Remove o cenário com loja/cidade; só resta o União Supermercados (campanhas de rede, sem cidade).
-    await limparCenarioDeConsulta(seed.mercadoComCidadeId);
+    await limparCenarioDeConsulta(prisma, seed.mercadoComCidadeId);
     const universaoOfertas = await prisma.mercado.findUniqueOrThrow({
       where: { slug: "uniao-supermercados" },
     });
@@ -144,6 +178,7 @@ describe("GET /api/ofertas, /api/mercados, /api/cidades", () => {
   });
 
   it("AC-10: filtra a listagem por data de vigência da promoção", async () => {
+    assertProducaoImplementada();
     const dentroDoPeriodoUniao = await app.inject({
       method: "GET",
       url: "/api/ofertas?dataInicio=2026-08-28&dataFim=2026-08-31",
@@ -167,6 +202,7 @@ describe("GET /api/ofertas, /api/mercados, /api/cidades", () => {
   });
 
   it("AC-11: busca a listagem por parte do nome do produto", async () => {
+    assertProducaoImplementada();
     const response = await app.inject({
       method: "GET",
       url: "/api/ofertas?produto=acai",
@@ -179,6 +215,7 @@ describe("GET /api/ofertas, /api/mercados, /api/cidades", () => {
   });
 
   it("AC-11: busca por termo sem correspondência retorna lista vazia (sem erro)", async () => {
+    assertProducaoImplementada();
     const response = await app.inject({
       method: "GET",
       url: "/api/ofertas?produto=produto-que-nao-existe-em-nenhuma-oferta",
@@ -190,6 +227,7 @@ describe("GET /api/ofertas, /api/mercados, /api/cidades", () => {
   });
 
   it("AC-12: ordena por preço crescente e decrescente", async () => {
+    assertProducaoImplementada();
     const asc = await app.inject({
       method: "GET",
       url: "/api/ofertas?sort=preco_asc",
@@ -210,6 +248,7 @@ describe("GET /api/ofertas, /api/mercados, /api/cidades", () => {
   });
 
   it("AC-12: ordena por nome do produto A-Z e Z-A", async () => {
+    assertProducaoImplementada();
     const az = await app.inject({
       method: "GET",
       url: "/api/ofertas?sort=nome_asc",
@@ -230,6 +269,7 @@ describe("GET /api/ofertas, /api/mercados, /api/cidades", () => {
   });
 
   it("GET /api/mercados lista os mercados cadastrados", async () => {
+    assertProducaoImplementada();
     const response = await app.inject({ method: "GET", url: "/api/mercados" });
     expect(response.statusCode).toBe(200);
     const slugs = response.json().map((m: any) => m.slug);

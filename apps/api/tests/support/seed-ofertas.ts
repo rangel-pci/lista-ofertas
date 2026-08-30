@@ -8,10 +8,13 @@
  * Importante (ADR-3 do design.md): a listagem pública só mostra a última
  * execução SUCCESS de cada mercado. Por isso cada oferta semeada aqui
  * pertence a um ScrapeRun com status SUCCESS.
+ *
+ * De propósito, `prisma` é recebido por parâmetro em vez de importado aqui:
+ * um `import` estático de `../../src/db` (módulo de produção ainda
+ * inexistente) derrubaria a COLETA de qualquer arquivo de teste que
+ * importasse este helper, escondendo os casos de teste individuais no
+ * relatório (ver nota equivalente no topo de cada `*.test.ts`).
  */
-// @ts-expect-error - módulo de produção ainda não existe; este teste define o contrato esperado.
-import { prisma } from "../../src/db";
-
 export interface SeedResult {
   mercadoUniaoId: string;
   mercadoComCidadeId: string;
@@ -26,7 +29,7 @@ export interface SeedResult {
  * (ordenação por preço), datas de vigência distintas (filtro por data) e
  * uma oferta com cidade associável via loja (AC-9 positivo).
  */
-export async function seedCenarioDeConsulta(): Promise<SeedResult> {
+export async function seedCenarioDeConsulta(prisma: any): Promise<SeedResult> {
   const mercadoUniao = await prisma.mercado.findUniqueOrThrow({
     where: { slug: "uniao-supermercados" },
   });
@@ -148,7 +151,7 @@ export async function seedCenarioDeConsulta(): Promise<SeedResult> {
   };
 }
 
-export async function limparCenarioDeConsulta(mercadoComCidadeId: string) {
+export async function limparCenarioDeConsulta(prisma: any, mercadoComCidadeId: string) {
   await prisma.ofertaCapturada.deleteMany({});
   await prisma.campanha.deleteMany({});
   await prisma.scrapeRun.deleteMany({});

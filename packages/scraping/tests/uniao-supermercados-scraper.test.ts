@@ -9,15 +9,40 @@
  * com fixtures HTML locais (algumas são cópia fiel das páginas reais
  * analisadas em 30/08/2026, outras são sintéticas para cobrir cenários de
  * borda). Nenhuma implementação existe ainda: espera-se que estes testes
- * falhem (module not found) até a etapa de implementação.
+ * falhem, por asserção, até a etapa de implementação.
+ *
+ * Nota sobre como este arquivo falha antes da implementação existir: em vez de um
+ * `import` estático de `../src/uniao-supermercados-scraper` no topo do arquivo (que
+ * derrubaria a COLETA do arquivo inteiro no Vitest, reportando "0 test" e um único
+ * erro de carregamento por arquivo, escondendo os casos individuais), o módulo é
+ * importado dinamicamente dentro de `beforeAll`. Assim a coleta funciona normalmente
+ * — todo `it()` abaixo é registrado — e cada teste falha individualmente, por
+ * asserção, com mensagem clara.
  */
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-// @ts-expect-error - módulo de produção ainda não existe; este teste define o contrato esperado.
-import { UniaoSupermercadosScraper } from "../src/uniao-supermercados-scraper";
+let UniaoSupermercadosScraper: new (...args: any[]) => { scrape(): Promise<any> };
+let moduleLoadError: unknown = null;
+
+beforeAll(async () => {
+  try {
+    // @ts-expect-error - módulo de produção ainda não existe; este teste define o contrato esperado.
+    const mod = await import("../src/uniao-supermercados-scraper");
+    UniaoSupermercadosScraper = mod.UniaoSupermercadosScraper;
+  } catch (error) {
+    moduleLoadError = error;
+  }
+});
+
+function assertProducaoImplementada() {
+  expect(
+    moduleLoadError,
+    "módulo de produção ../src/uniao-supermercados-scraper ainda não existe (esperado nesta fase de TDD; a implementação deve fazer este teste passar)",
+  ).toBeNull();
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -53,6 +78,7 @@ describe("UniaoSupermercadosScraper", () => {
   });
 
   it("extrai a campanha e todos os seus produtos a partir das páginas reais analisadas (RF-1, RF-2)", async () => {
+    assertProducaoImplementada();
     stubSite({
       "/promocoes": fixture("promocoes-listing.html"),
       "/promocoes/campanha/00000000000000/9066": fixture(
@@ -101,6 +127,7 @@ describe("UniaoSupermercadosScraper", () => {
   });
 
   it("percorre TODAS as campanhas listadas, não apenas a primeira (RF-1, AC-3)", async () => {
+    assertProducaoImplementada();
     stubSite({
       "/promocoes": fixture("promocoes-listing-multiplas-campanhas.html"),
       "/promocoes/campanha/00000000000000/9066": fixture(
@@ -132,6 +159,7 @@ describe("UniaoSupermercadosScraper", () => {
   });
 
   it("inclui a URL de origem de cada campanha extraída (RF-2)", async () => {
+    assertProducaoImplementada();
     stubSite({
       "/promocoes": fixture("promocoes-listing.html"),
       "/promocoes/campanha/00000000000000/9066": fixture(
@@ -146,6 +174,7 @@ describe("UniaoSupermercadosScraper", () => {
   });
 
   it("falha de forma descritiva quando a listagem não tem nenhuma campanha (AC-14)", async () => {
+    assertProducaoImplementada();
     stubSite({
       "/promocoes": fixture("promocoes-listing-sem-campanhas.html"),
     });
@@ -156,6 +185,7 @@ describe("UniaoSupermercadosScraper", () => {
   });
 
   it("falha de forma descritiva quando a estrutura do HTML mudou de forma inesperada (AC-14)", async () => {
+    assertProducaoImplementada();
     stubSite({
       "/promocoes": fixture("promocoes-listing-estrutura-alterada.html"),
     });
@@ -166,6 +196,7 @@ describe("UniaoSupermercadosScraper", () => {
   });
 
   it("nao retorna sucesso parcial silencioso: se uma pagina de detalhe falhar, o erro se propaga (AC-14)", async () => {
+    assertProducaoImplementada();
     stubSite({
       "/promocoes": fixture("promocoes-listing.html"),
       "/promocoes/campanha/00000000000000/9066": null,

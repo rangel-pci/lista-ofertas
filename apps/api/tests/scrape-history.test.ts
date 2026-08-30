@@ -9,6 +9,14 @@
  * de ponta a ponta (webhook → scraper → persistência) sem depender de
  * rede externa nem inventar nenhum mecanismo de injeção de dependência
  * que não estivesse já no modelo de dados aprovado pelo design.
+ *
+ * Nota sobre como este arquivo falha antes da implementação existir: em vez de um
+ * `import` estático de `../src/app`/`../src/db` no topo do arquivo (que derrubaria a
+ * COLETA do arquivo inteiro no Vitest, reportando "0 test" e um único erro de
+ * carregamento por arquivo, escondendo os casos individuais), os módulos são
+ * importados dinamicamente dentro de `beforeAll`. Assim a coleta funciona normalmente
+ * — todo `it()` abaixo é registrado — e cada teste falha individualmente, por
+ * asserção, com mensagem clara.
  */
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -20,16 +28,36 @@ process.env.DATABASE_URL =
   process.env.DATABASE_URL ??
   "postgresql://postgres:postgres@localhost:5432/lista_ofertas_test";
 
-// @ts-expect-error - módulo de produção ainda não existe; este teste define o contrato esperado.
-import { buildApp } from "../src/app";
 import { getMercadoUniao, resetOfertasEExecucoes } from "./support/test-db";
 import {
   startMockMercadoSite,
   type MockMercadoSite,
 } from "./support/mock-mercado-site";
 import { waitForScrapeRunCompletion } from "./support/wait-for-scrape-run";
-// @ts-expect-error - módulo de produção ainda não existe; este teste define o contrato esperado.
-import { prisma } from "../src/db";
+
+let buildApp: (...args: any[]) => Promise<any>;
+let prisma: any;
+let moduleLoadError: unknown = null;
+
+beforeAll(async () => {
+  try {
+    // @ts-expect-error - módulo de produção ainda não existe; este teste define o contrato esperado.
+    const appMod = await import("../src/app");
+    // @ts-expect-error - módulo de produção ainda não existe; este teste define o contrato esperado.
+    const dbMod = await import("../src/db");
+    buildApp = appMod.buildApp;
+    prisma = dbMod.prisma;
+  } catch (error) {
+    moduleLoadError = error;
+  }
+});
+
+function assertProducaoImplementada() {
+  expect(
+    moduleLoadError,
+    "módulo de produção ../src/app ou ../src/db ainda não existe (esperado nesta fase de TDD; a implementação deve fazer este teste passar)",
+  ).toBeNull();
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 function fixture(name: string) {
@@ -53,18 +81,20 @@ describe("Histórico e persistência de execuções de scraping", () => {
   let mercadoUniaoId: string;
 
   beforeAll(async () => {
+    if (moduleLoadError) return;
     app = await buildApp();
     await app.ready();
   });
 
   afterAll(async () => {
-    await app.close();
-    await prisma.$disconnect();
+    if (app) await app.close();
+    if (prisma) await prisma.$disconnect();
   });
 
   beforeEach(async () => {
-    await resetOfertasEExecucoes();
-    const mercado = await getMercadoUniao();
+    if (moduleLoadError) return;
+    await resetOfertasEExecucoes(prisma);
+    const mercado = await getMercadoUniao(prisma);
     mercadoUniaoId = mercado.id;
   });
 
@@ -73,6 +103,7 @@ describe("Histórico e persistência de execuções de scraping", () => {
   });
 
   it("AC-3: percorre TODAS as campanhas da listagem e persiste todos os produtos de cada uma", async () => {
+    assertProducaoImplementada();
     mock = await startMockMercadoSite({
       "/promocoes": { status: 200, html: fixture("promocoes-execucao-1.html") },
       "/promocoes/campanha/00000000000000/9066": {
@@ -124,6 +155,7 @@ describe("Histórico e persistência de execuções de scraping", () => {
   });
 
   it("AC-4 e AC-5: duas execuções em datas diferentes preservam AMBOS os preços da mesma oferta", async () => {
+    assertProducaoImplementada();
     // 1ª execução.
     mock = await startMockMercadoSite({
       "/promocoes": { status: 200, html: fixture("promocoes-execucao-1.html") },
@@ -195,6 +227,7 @@ describe("Histórico e persistência de execuções de scraping", () => {
     // esse filtro, o mesmo PLU apareceria duas vezes (uma por execução) na
     // tela principal, o que violaria AC-13 (card por oferta, não por
     // execução histórica).
+    assertProducaoImplementada();
 
     // 1ª execução.
     mock = await startMockMercadoSite({
@@ -248,6 +281,7 @@ describe("Histórico e persistência de execuções de scraping", () => {
   });
 
   it("AC-14: uma execução com falha (site indisponível) não apaga nem altera dados de execuções anteriores", async () => {
+    assertProducaoImplementada();
     // 1ª execução: sucesso.
     mock = await startMockMercadoSite({
       "/promocoes": { status: 200, html: fixture("promocoes-execucao-1.html") },
@@ -292,6 +326,7 @@ describe("Histórico e persistência de execuções de scraping", () => {
   });
 
   it("AC-15: adicionar um segundo mercado não altera os registros já existentes do União Supermercados", async () => {
+    assertProducaoImplementada();
     mock = await startMockMercadoSite({
       "/promocoes": { status: 200, html: fixture("promocoes-execucao-1.html") },
       "/promocoes/campanha/00000000000000/9066": {

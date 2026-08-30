@@ -1,9 +1,20 @@
 # Testes de integração — `apps/api`
 
 Suíte escrita antes da implementação (papel de Engenheiro de Testes). É
-esperado que estes testes falhem por "módulo não encontrado" até a etapa
-de implementação criar `src/app.ts`, `src/db.ts` e o schema Prisma
-descritos em `.factory/artifacts/design.md`.
+esperado que estes testes falhem até a etapa de implementação criar
+`src/app.ts`, `src/db.ts` e o schema Prisma descritos em
+`.factory/artifacts/design.md`.
+
+`../src/app` e `../src/db` são importados dinamicamente dentro de
+`beforeAll` (em vez de `import` estático no topo do arquivo) de propósito:
+um `import` estático de um módulo inexistente derruba a coleta do arquivo
+inteiro no Vitest (relatado como "0 test", um único erro de carregamento
+por arquivo), escondendo os casos de teste individuais. Com import
+dinâmico, cada `it()` é coletado normalmente e falha, individualmente, por
+uma asserção com mensagem clara — o "vermelho" que o papel de Engenheiro
+de Testes exige. Os helpers em `tests/support/test-db.ts` e
+`tests/support/seed-ofertas.ts` recebem `prisma` por parâmetro pelo mesmo
+motivo, em vez de importá-lo.
 
 Para rodar esta suíte junto com `packages/scraping` em uma única execução
 (gerando também o relatório JUnit em `.factory/reports/junit.xml`), use

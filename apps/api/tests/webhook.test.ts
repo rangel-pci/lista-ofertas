@@ -14,6 +14,15 @@
  * recomendado pelo próprio Fastify (já escolhido em design.md) para testar
  * sem abrir uma porta de rede real. A chave é lida de `WEBHOOK_SECRET`
  * (nome de variável já definido em design.md).
+ *
+ * Nota sobre como este arquivo falha antes da implementação existir: em vez de um
+ * `import` estático de `../src/app` no topo do arquivo (que derrubaria a COLETA do
+ * arquivo inteiro no Vitest, reportando "0 test" e um único erro de carregamento por
+ * arquivo, escondendo os casos individuais), o módulo é importado dinamicamente dentro
+ * de `beforeAll`. Assim a coleta funciona normalmente — todo `it()` abaixo é registrado
+ * — e cada teste falha individualmente, por asserção, com mensagem clara. Depois que a
+ * implementação existir, a chamada de `assertProducaoImplementada()` para de falhar e o
+ * restante do teste passa a validar o comportamento real.
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -22,27 +31,53 @@ process.env.DATABASE_URL =
   process.env.DATABASE_URL ??
   "postgresql://postgres:postgres@localhost:5432/lista_ofertas_test";
 
-// @ts-expect-error - módulo de produção ainda não existe; este teste define o contrato esperado.
-import { buildApp } from "../src/app";
 import { resetOfertasEExecucoes } from "./support/test-db";
 
+let buildApp: (...args: any[]) => Promise<any>;
+let prisma: any;
+let moduleLoadError: unknown = null;
+
+beforeAll(async () => {
+  try {
+    // @ts-expect-error - módulo de produção ainda não existe; este teste define o contrato esperado.
+    const appMod = await import("../src/app");
+    // @ts-expect-error - módulo de produção ainda não existe; este teste define o contrato esperado.
+    const dbMod = await import("../src/db");
+    buildApp = appMod.buildApp;
+    prisma = dbMod.prisma;
+  } catch (error) {
+    moduleLoadError = error;
+  }
+});
+
+function assertProducaoImplementada() {
+  expect(
+    moduleLoadError,
+    "módulo de produção ../src/app ou ../src/db ainda não existe (esperado nesta fase de TDD; a implementação deve fazer este teste passar)",
+  ).toBeNull();
+}
+
 describe("POST /api/scrape-runs (webhook de sincronização)", () => {
-  let app: Awaited<ReturnType<typeof buildApp>>;
+  let app: any;
 
   beforeAll(async () => {
+    if (moduleLoadError) return;
     app = await buildApp();
     await app.ready();
   });
 
   afterAll(async () => {
-    await app.close();
+    if (app) await app.close();
+    if (prisma) await prisma.$disconnect();
   });
 
   beforeEach(async () => {
-    await resetOfertasEExecucoes();
+    if (moduleLoadError) return;
+    await resetOfertasEExecucoes(prisma);
   });
 
   it("AC-1: chave correta dispara uma execução e retorna sucesso com um identificador", async () => {
+    assertProducaoImplementada();
     const response = await app.inject({
       method: "POST",
       url: "/api/scrape-runs",
@@ -60,6 +95,7 @@ describe("POST /api/scrape-runs (webhook de sincronização)", () => {
   });
 
   it("AC-2: chamada sem a chave é rejeitada e nenhuma execução é disparada", async () => {
+    assertProducaoImplementada();
     const response = await app.inject({
       method: "POST",
       url: "/api/scrape-runs",
@@ -78,6 +114,7 @@ describe("POST /api/scrape-runs (webhook de sincronização)", () => {
   });
 
   it("AC-2: chamada com chave incorreta é rejeitada e nenhuma execução é disparada", async () => {
+    assertProducaoImplementada();
     const response = await app.inject({
       method: "POST",
       url: "/api/scrape-runs",
@@ -88,6 +125,7 @@ describe("POST /api/scrape-runs (webhook de sincronização)", () => {
   });
 
   it("AC-14: o status de uma execução (sucesso ou falha) fica consultável via GET /api/scrape-runs/:id", async () => {
+    assertProducaoImplementada();
     const trigger = await app.inject({
       method: "POST",
       url: "/api/scrape-runs",
