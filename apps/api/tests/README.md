@@ -10,7 +10,7 @@ descritos em `.factory/artifacts/design.md`.
 | Arquivo | Critérios de aceite |
 |---|---|
 | `webhook.test.ts` | AC-1, AC-2, AC-14 (status consultável) |
-| `scrape-history.test.ts` | AC-3, AC-4, AC-5, AC-14, AC-15 |
+| `scrape-history.test.ts` | AC-3, AC-4, AC-5, AC-13 (ADR-3, listagem sem duplicar histórico), AC-14, AC-15 |
 | `ofertas-query.test.ts` | AC-8, AC-9, AC-10, AC-11, AC-12, AC-13 |
 
 ## Como rodar (quando a implementação existir)

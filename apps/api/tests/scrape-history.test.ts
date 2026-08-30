@@ -187,6 +187,66 @@ describe("Histórico e persistência de execuções de scraping", () => {
     expect(precos[1]).toBeCloseTo(15.99, 2);
   });
 
+  it("AC-13/ADR-3: a listagem pública mostra apenas a execução SUCCESS mais recente, sem duplicar a mesma oferta de execuções antigas", async () => {
+    // Design.md, seção 4.4/ADR-3: o histórico completo (RF-2/RF-3) é
+    // preservado em OfertaCapturada, mas a listagem pública (GET
+    // /api/ofertas) reconcilia isso com "mostrar o estado atual" ao
+    // considerar somente a última execução SUCCESS de cada mercado. Sem
+    // esse filtro, o mesmo PLU apareceria duas vezes (uma por execução) na
+    // tela principal, o que violaria AC-13 (card por oferta, não por
+    // execução histórica).
+
+    // 1ª execução.
+    mock = await startMockMercadoSite({
+      "/promocoes": { status: 200, html: fixture("promocoes-execucao-1.html") },
+      "/promocoes/campanha/00000000000000/9066": {
+        status: 200,
+        html: fixture("campanha-9066-execucao-1.html"),
+      },
+    });
+    await prisma.mercado.update({
+      where: { id: mercadoUniaoId },
+      data: { urlBase: mock.baseUrl },
+    });
+    await triggerScrapeRunAndWait(app);
+    await mock.close();
+
+    // 2ª execução: mesma campanha, PLU 1046772 com preço diferente (R$ 13,49).
+    mock = await startMockMercadoSite({
+      "/promocoes": { status: 200, html: fixture("promocoes-execucao-2.html") },
+      "/promocoes/campanha/00000000000000/9066": {
+        status: 200,
+        html: fixture("campanha-9066-execucao-2.html"),
+      },
+    });
+    await prisma.mercado.update({
+      where: { id: mercadoUniaoId },
+      data: { urlBase: mock.baseUrl },
+    });
+    const segunda = await triggerScrapeRunAndWait(app);
+    expect(segunda.finalState.status).toBe("SUCCESS");
+
+    // A tabela de histórico continua com as duas versões do PLU (RF-3/AC-4/AC-5).
+    const historicoCompleto = await prisma.ofertaCapturada.findMany({
+      where: { mercadoId: mercadoUniaoId, plu: "1046772" },
+    });
+    expect(historicoCompleto).toHaveLength(2);
+
+    // Mas a listagem pública mostra o PLU 1046772 uma única vez, com o
+    // preço da execução mais recente.
+    const listagemPublica = await app.inject({
+      method: "GET",
+      url: "/api/ofertas?mercado=uniao-supermercados",
+    });
+    expect(listagemPublica.statusCode).toBe(200);
+    const body = listagemPublica.json();
+    const lista = Array.isArray(body) ? body : body.items;
+
+    const itensDoPlu = lista.filter((o: { plu: string }) => o.plu === "1046772");
+    expect(itensDoPlu).toHaveLength(1);
+    expect(Number(itensDoPlu[0].preco)).toBeCloseTo(13.49, 2);
+  });
+
   it("AC-14: uma execução com falha (site indisponível) não apaga nem altera dados de execuções anteriores", async () => {
     // 1ª execução: sucesso.
     mock = await startMockMercadoSite({
