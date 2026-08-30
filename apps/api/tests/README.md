@@ -5,6 +5,12 @@ esperado que estes testes falhem por "módulo não encontrado" até a etapa
 de implementação criar `src/app.ts`, `src/db.ts` e o schema Prisma
 descritos em `.factory/artifacts/design.md`.
 
+Para rodar esta suíte junto com `packages/scraping` em uma única execução
+(gerando também o relatório JUnit em `.factory/reports/junit.xml`), use
+`npm test` a partir da raiz do repositório. Rodar apenas este pacote:
+`npm run test --workspace @lista-ofertas/api` (não inclui o relatório
+JUnit consolidado).
+
 ## Cenários cobertos
 
 | Arquivo | Critérios de aceite |

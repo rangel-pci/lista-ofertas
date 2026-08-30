@@ -25,3 +25,7 @@ atual do site de terceiro.
 ```bash
 npm run test --workspace @lista-ofertas/scraping
 ```
+
+Para rodar esta suíte junto com `apps/api` em uma única execução (gerando
+também o relatório JUnit em `.factory/reports/junit.xml`), use `npm test`
+a partir da raiz do repositório.

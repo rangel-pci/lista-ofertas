@@ -7,9 +7,9 @@
     "packages/*"
   ],
   "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test": "vitest run --workspace vitest.workspace.ts --reporter=default --reporter=junit --outputFile=.factory/reports/junit.xml",
+    "test:watch": "vitest --workspace vitest.workspace.ts",
+    "test:e2e": "playwright test --config apps/web/playwright.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.47.0",
