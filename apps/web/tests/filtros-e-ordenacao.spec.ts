@@ -39,7 +39,9 @@ test.describe("AC-8: filtro por mercado", () => {
     const filtroMercado = page.getByLabel(/mercado/i).or(
       page.getByTestId("filtro-mercado"),
     );
-    await filtroMercado.first().selectOption({ label: /União Supermercados/i });
+    // `selectOption` aceita apenas string em `label` (regex é rejeitada pela
+    // própria API do Playwright), por isso o rótulo é comparado literalmente.
+    await filtroMercado.first().selectOption({ label: "União Supermercados" });
 
     await expect(page).toHaveURL(/mercado=/);
 
@@ -121,7 +123,7 @@ test.describe("AC-12: ordenação", () => {
     const seletorOrdenacao = page.getByLabel(/orden/i).or(
       page.getByTestId("ordenacao"),
     );
-    await seletorOrdenacao.first().selectOption({ label: /preço.*crescente|menor preço/i });
+    await seletorOrdenacao.first().selectOption({ label: "Preço crescente" });
     await page.waitForTimeout(300);
 
     const precos = await precosExibidos(page);
@@ -135,7 +137,7 @@ test.describe("AC-12: ordenação", () => {
     const seletorOrdenacao = page.getByLabel(/orden/i).or(
       page.getByTestId("ordenacao"),
     );
-    await seletorOrdenacao.first().selectOption({ label: /preço.*decrescente|maior preço/i });
+    await seletorOrdenacao.first().selectOption({ label: "Preço decrescente" });
     await page.waitForTimeout(300);
 
     const precos = await precosExibidos(page);
@@ -150,12 +152,12 @@ test.describe("AC-12: ordenação", () => {
       page.getByTestId("ordenacao"),
     );
 
-    await seletorOrdenacao.first().selectOption({ label: /nome.*a-z/i });
+    await seletorOrdenacao.first().selectOption({ label: "Nome A-Z" });
     await page.waitForTimeout(300);
     const nomesAz = await page.getByTestId("card-oferta-nome").allInnerTexts();
     expect(nomesAz).toEqual([...nomesAz].sort((a, b) => a.localeCompare(b)));
 
-    await seletorOrdenacao.first().selectOption({ label: /nome.*z-a/i });
+    await seletorOrdenacao.first().selectOption({ label: "Nome Z-A" });
     await page.waitForTimeout(300);
     const nomesZa = await page.getByTestId("card-oferta-nome").allInnerTexts();
     expect(nomesZa).toEqual([...nomesZa].sort((a, b) => b.localeCompare(a)));
