@@ -1,0 +1,129 @@
+// Modelo de dados de design.md, seção 4.3.
+//
+// Decisão estrutural (ADR-2): `OfertaCapturada` é um fato append-only, uma
+// linha por produto por campanha por execução de scraping. Nunca é atualizada
+// nem apagada, e é isso que garante RF-3/AC-4/AC-5 (histórico preservado e
+// preços de execuções distintas ambos consultáveis). `Campanha` é a única
+// entidade upsertada, por identidade de origem.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TipoCampanha {
+  REDE
+  LOJA
+}
+
+enum ScrapeRunStatus {
+  RUNNING
+  SUCCESS
+  PARTIAL
+  FAILED
+}
+
+/// Rede/empresa de supermercado. Adicionar um mercado é inserir uma linha,
+/// sem migração e sem tocar dados de mercados existentes (RF-8 / AC-15).
+model Mercado {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  nome      String
+  urlBase   String
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  lojas      Loja[]
+  campanhas  Campanha[]
+  scrapeRuns ScrapeRun[]
+  ofertas    OfertaCapturada[]
+}
+
+/// Unidade física de um mercado. É a origem do dado de cidade (AC-9).
+model Loja {
+  id        String   @id @default(uuid())
+  mercadoId String
+  nome      String
+  endereco  String?
+  cidade    String
+  uf        String?
+  cep       String?
+  telefone  String?
+  horario   String?
+  createdAt DateTime @default(now())
+
+  mercado   Mercado    @relation(fields: [mercadoId], references: [id], onDelete: Cascade)
+  campanhas Campanha[]
+
+  @@index([mercadoId])
+  @@index([cidade])
+}
+
+/// Identidade da campanha na origem. Upsertada por (mercado, código, id de
+/// origem): reencontrar a mesma campanha atualiza vigência e `ultimaVistaEm`,
+/// sem duplicar a campanha nem apagar ofertas já capturadas.
+model Campanha {
+  id              String       @id @default(uuid())
+  mercadoId       String
+  codigoOrigem    String
+  idOrigem        String
+  nome            String
+  tipo            TipoCampanha
+  lojaId          String?
+  dataInicio      DateTime?
+  dataFim         DateTime?
+  urlOrigem       String
+  primeiraVistaEm DateTime     @default(now())
+  ultimaVistaEm   DateTime     @default(now())
+
+  mercado Mercado           @relation(fields: [mercadoId], references: [id], onDelete: Cascade)
+  loja    Loja?             @relation(fields: [lojaId], references: [id])
+  ofertas OfertaCapturada[]
+
+  @@unique([mercadoId, codigoOrigem, idOrigem])
+  @@index([mercadoId])
+  @@index([dataInicio, dataFim])
+}
+
+/// Uma linha por execução de scraping. Satisfaz AC-1 (identificador retornado
+/// pelo webhook) e AC-14 (falha consultável, com mensagem).
+model ScrapeRun {
+  id           String          @id @default(uuid())
+  mercadoId    String
+  status       ScrapeRunStatus @default(RUNNING)
+  startedAt    DateTime        @default(now())
+  finishedAt   DateTime?
+  errorMessage String?
+  stats        Json?
+
+  mercado Mercado           @relation(fields: [mercadoId], references: [id], onDelete: Cascade)
+  ofertas OfertaCapturada[]
+
+  @@index([mercadoId, status, startedAt])
+}
+
+/// Fato append-only da oferta capturada (ADR-2).
+model OfertaCapturada {
+  id          String   @id @default(uuid())
+  scrapeRunId String
+  campanhaId  String
+  mercadoId   String
+  plu         String
+  nomeProduto String
+  preco       Decimal  @db.Decimal(10, 2)
+  capturadoEm DateTime @default(now())
+
+  scrapeRun ScrapeRun @relation(fields: [scrapeRunId], references: [id], onDelete: Cascade)
+  campanha  Campanha  @relation(fields: [campanhaId], references: [id], onDelete: Cascade)
+  mercado   Mercado   @relation(fields: [mercadoId], references: [id], onDelete: Cascade)
+
+  @@index([scrapeRunId])
+  @@index([mercadoId, plu])
+  @@index([campanhaId])
+  @@index([nomeProduto])
+  @@index([capturadoEm])
+}

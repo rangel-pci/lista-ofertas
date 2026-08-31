@@ -5,9 +5,19 @@
   "type": "module",
   "description": "Servico HTTP: webhook de scraping, API de consulta publica, orquestracao (design.md secao 4).",
   "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@fastify/cors": "^10.0.1",
+    "@lista-ofertas/scraping": "*",
+    "@prisma/client": "^5.22.0",
+    "fastify": "^5.1.0"
+  },
   "devDependencies": {
+    "prisma": "^5.22.0",
+    "tsx": "^4.19.0",
     "vitest": "^2.1.0"
   }
 }
