@@ -1,0 +1,32 @@
+{
+  "name": "lista-ofertas",
+  "private": true,
+  "description": "Mineração e listagem pública de promoções de mercados. Monorepo (npm workspaces).",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:generate": "prisma generate --schema apps/api/prisma/schema.prisma",
+    "db:migrate": "prisma migrate deploy --schema apps/api/prisma/schema.prisma",
+    "db:seed": "node apps/api/prisma/seed.mjs",
+    "dev:api": "npm run dev --workspace @lista-ofertas/api",
+    "dev:web": "npm run dev --workspace @lista-ofertas/web",
+    "typecheck": "tsc -p packages/scraping/tsconfig.src.json --noEmit && tsc -p apps/api/tsconfig.src.json --noEmit && tsc -p apps/web/tsconfig.json --noEmit",
+    "build": "npm run typecheck && npm run build --workspace @lista-ofertas/web",
+    "pretest": "node scripts/prepare-test-db.mjs",
+    "test": "vitest run --workspace vitest.workspace.ts --reporter=default --reporter=junit --outputFile=.factory/reports/junit.xml",
+    "test:watch": "vitest --workspace vitest.workspace.ts",
+    "test:e2e": "playwright test --config apps/web/playwright.config.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.47.0",
+    "@types/node": "^22.20.1",
+    "prisma": "^5.22.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

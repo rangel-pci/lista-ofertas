@@ -1,0 +1,28 @@
+{
+  "name": "@lista-ofertas/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Frontend publico, mobile-first (design.md secao 4.8).",
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "next": "^14.2.15",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.47.0",
+    "@types/node": "^22.7.0",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.13",
+    "typescript": "^5.6.0"
+  }
+}

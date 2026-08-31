@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<!--
+  Fixture SINTÉTICA. Simula uma mudança de estrutura no site do União
+  Supermercados (redesign de terceiro, sem aviso): nenhuma das classes
+  esperadas (network-promo-card, network-promo-grid) está presente.
+  Usada para validar que o scraper falha de forma descritiva em vez de
+  travar ou de persistir dados incompletos como se fossem completos
+  (ver design.md, seção 7, e AC-14).
+-->
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><title>Promoções | União Supermercados</title></head>
+<body class="public-site">
+<main class="promotions-page-v2">
+  <div class="novo-layout-de-cards">
+    <p>Layout completamente diferente do esperado pelo scraper.</p>
+  </div>
+</main>
+</body>
+</html>
