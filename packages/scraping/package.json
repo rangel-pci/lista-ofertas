@@ -4,8 +4,15 @@
   "private": true,
   "type": "module",
   "description": "Adapters de scraping por mercado (implementa MercadoScraper). Ver design.md secao 4.6.",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "test": "vitest run"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0"
   },
   "devDependencies": {
     "vitest": "^2.1.0"
