@@ -34,6 +34,15 @@ export async function seedCenarioDeConsulta(prisma: any): Promise<SeedResult> {
     where: { slug: "uniao-supermercados" },
   });
 
+  // `resetOfertasEExecucoes` preserva os registros de catálogo (Mercado/Loja),
+  // então o mercado sintético deste cenário sobrevive ao teste anterior e
+  // precisa ser removido antes de ser recriado: sem isso, o segundo `beforeEach`
+  // esbarraria na unicidade de `slug`.
+  await prisma.loja.deleteMany({
+    where: { mercado: { slug: "mercado-com-loja-teste" } },
+  });
+  await prisma.mercado.deleteMany({ where: { slug: "mercado-com-loja-teste" } });
+
   const mercadoComCidade = await prisma.mercado.create({
     data: {
       slug: "mercado-com-loja-teste",

@@ -43,10 +43,19 @@ JUnit consolidado).
 2. Aplique as migrations e o seed do mercado União Supermercados nesse
    banco (`prisma migrate deploy` + script de seed, conforme a unidade de
    trabalho 2 do design).
-3. Exporte `DATABASE_URL` apontando para esse banco (o valor padrão usado
-   pelos testes é `postgresql://postgres:postgres@localhost:5432/lista_ofertas_test`,
-   ajustável via variável de ambiente).
+3. Exporte `TEST_DATABASE_URL` se o banco de teste não for o padrão
+   (`postgresql://postgres:postgres@localhost:5432/lista_ofertas_test`).
 4. `npm run test --workspace @lista-ofertas/api`.
+
+Os passos 1 e 2 são feitos automaticamente pelo `pretest` de `npm test` na raiz
+(`scripts/prepare-test-db.mjs`): ele sobe o Postgres via Docker se necessário,
+aplica as migrations e roda o seed.
+
+O destino do banco de teste é resolvido em `scripts/test-database-url.mjs` e
+fixado no projeto `api` do Vitest, e não lido de `DATABASE_URL`. Isso é
+proposital: a suíte apaga linhas entre testes, e um `DATABASE_URL` herdado do
+ambiente (de outro projeto na mesma máquina) faria os testes migrarem e limparem
+um banco alheio.
 
 ## Por que não usamos o site real do União Supermercados nos testes
 
