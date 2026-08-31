@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  /* AC-7: nenhum elemento pode provocar rolagem horizontal em telas estreitas. */
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+}
